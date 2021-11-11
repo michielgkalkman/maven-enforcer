@@ -30,7 +30,7 @@ import java.io.IOException;
 @RunWith( Enclosed.class )
 public class TestDependencyConvergence {
 
-    public static class ExcludesDoNotUseTransitiveDependencies
+    public static class DoNotAllowSameArtifactDifferentVersion
     {
         private DependencyConvergenceTestSetup setup;
 
