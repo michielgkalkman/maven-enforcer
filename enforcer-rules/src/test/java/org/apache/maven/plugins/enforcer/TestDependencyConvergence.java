@@ -19,13 +19,24 @@ package org.apache.maven.plugins.enforcer;
  * under the License.
  */
 
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.DefaultArtifact;
+import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
+import org.apache.maven.project.ProjectBuildingRequest;
+import org.apache.maven.shared.dependency.graph.DependencyCollectorBuilder;
+import org.apache.maven.shared.dependency.graph.DependencyCollectorBuilderException;
+import org.apache.maven.shared.dependency.graph.internal.DefaultDependencyNode;
+import org.codehaus.plexus.PlexusContainer;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 
 @RunWith( Enclosed.class )
 public class TestDependencyConvergence {
@@ -42,10 +53,22 @@ public class TestDependencyConvergence {
         }
 
         @Test(expected = EnforcerRuleException.class)
-        public void testGroupIdArtifactIdVersion()
+        public void testSameArtifactDifferentVersions()
                 throws Exception
         {
             this.setup.runRule( );
+        }
+
+        @Test
+        public void testGroupIdArtifactIdVersion()
+                throws Exception
+        {
+            Artifact artifact = new DefaultArtifact( "groupId", "artifactId", "version", "compile", "jar",
+                    "classifier", null );
+            final DefaultDependencyNode node = new DefaultDependencyNode( artifact );
+            node.setChildren( Collections.emptyList() );
+
+            this.setup.runRule(node );
         }
     }
 }
