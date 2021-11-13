@@ -21,22 +21,20 @@ package org.apache.maven.plugins.enforcer;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
-import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
-import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.shared.dependency.graph.DependencyCollectorBuilder;
-import org.apache.maven.shared.dependency.graph.DependencyCollectorBuilderException;
+import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
 import org.apache.maven.shared.dependency.graph.internal.DefaultDependencyNode;
-import org.codehaus.plexus.PlexusContainer;
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
+
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @RunWith( Enclosed.class )
 public class TestDependencyConvergence {
@@ -47,7 +45,6 @@ public class TestDependencyConvergence {
 
         @Before
         public void beforeMethod()
-                throws IOException
         {
             this.setup = new DependencyConvergenceTestSetup();
         }
@@ -56,19 +53,32 @@ public class TestDependencyConvergence {
         public void testSameArtifactDifferentVersions()
                 throws Exception
         {
-            this.setup.runRule( );
+            final EnforcerRuleHelper helper = this.setup.getHelper();
+            try {
+                this.setup.runRule();
+            } finally {
+                verify(helper.getLog()).warn(String.format("%n" +
+                        "Dependency convergence error for groupId:artifact:jar:1.0.0:compile paths to dependency are:%n" +
+                        "+-groupId:artifactId:jar:classifier:version:compile%n" +
+                        "  +-groupId:artifact:jar:1.0.0:compile%n" +
+                        "and%n" +
+                        "+-groupId:artifactId:jar:classifier:version:compile%n" +
+                        "  +-groupId:artifact:jar:2.0.0:compile%n"));
+            }
         }
 
         @Test
-        public void testGroupIdArtifactIdVersion()
-                throws Exception
-        {
+        public void testGroupIdArtifactIdVersion() throws EnforcerRuleException, ComponentLookupException {
             Artifact artifact = new DefaultArtifact( "groupId", "artifactId", "version", "compile", "jar",
                     "classifier", null );
             final DefaultDependencyNode node = new DefaultDependencyNode( artifact );
             node.setChildren( Collections.emptyList() );
 
-            this.setup.runRule(node );
+            final EnforcerRuleHelper helper = this.setup.getHelper();
+
+            this.setup.runRule(node);
+
+            verifyNoInteractions(helper.getLog());
         }
     }
 }

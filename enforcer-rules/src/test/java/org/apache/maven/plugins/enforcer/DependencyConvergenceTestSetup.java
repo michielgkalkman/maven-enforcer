@@ -19,35 +19,26 @@ package org.apache.maven.plugins.enforcer;
  * under the License.
  */
 
-import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.execution.MavenSession;
-import org.apache.maven.plugin.MojoExecution;
-import org.apache.maven.plugin.PluginParameterExpressionEvaluator;
 import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.apache.maven.plugin.testing.ArtifactStubFactory;
-import org.apache.maven.plugins.enforcer.utils.MockEnforcerExpressionEvaluator;
-import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.shared.dependency.graph.DependencyCollectorBuilder;
 import org.apache.maven.shared.dependency.graph.DependencyCollectorBuilderException;
 import org.apache.maven.shared.dependency.graph.internal.DefaultDependencyNode;
-import org.codehaus.plexus.PlexusContainer;
-import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluator;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.mockito.Mockito;
-import org.mockito.internal.util.collections.HashCodeAndEqualsSafeSet;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 public class DependencyConvergenceTestSetup {
-    public DependencyConvergenceTestSetup() throws IOException {
+    public DependencyConvergenceTestSetup() {
         this.includes = new ArrayList<String>();
 
         ArtifactStubFactory factory = new ArtifactStubFactory();
@@ -56,7 +47,13 @@ public class DependencyConvergenceTestSetup {
         project.setArtifacts( Collections.emptySet());
         project.setDependencyArtifacts( Collections.emptySet());
 
-        this.helper = EnforcerTestUtils.getHelper( project );
+//        this.helper = EnforcerTestUtils.getHelper( project );
+
+        this.log = mock(Log.class);
+
+        this.helper = spy(EnforcerTestUtils.getHelper( project ));
+
+        doReturn(log).when(helper).getLog();
 
         this.rule = new DependencyConvergence();
 
@@ -70,13 +67,33 @@ public class DependencyConvergenceTestSetup {
 
     private EnforcerRuleHelper helper;
 
+    private Log log;
+
+    public EnforcerRuleHelper getHelper( ) {
+        return helper;
+    }
+
+
     public void runRule( )
             throws EnforcerRuleException
     {
         rule.execute( helper );
     }
 
-    public void runRule( final DefaultDependencyNode node)
+    static class Log extends SystemStreamLog {
+        private StringBuilder warnBuilder = new StringBuilder();
+
+        public String getWarn() {
+            return warnBuilder.toString();
+        }
+
+        @Override
+        public void warn(CharSequence content) {
+            warnBuilder.append(content);
+        }
+    }
+
+    public void runRule(final DefaultDependencyNode node)
             throws EnforcerRuleException, ComponentLookupException {
         DependencyCollectorBuilder dependencyCollectorBuilder = new DependencyCollectorBuilder() {
             @Override
